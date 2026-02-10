@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Browser ML: Titanic Binary Classifier</title>
+    <!-- TensorFlow.js and tfjs-vis CDNs -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-vis@latest"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e1e8ed;
+        }
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #7f8c8d;
+            font-size: 1.1em;
+        }
+        section {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border: 1px solid #e1e8ed;
+        }
+        h2 {
+            color: #3498db;
+            margin-top: 0;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: background 0.3s;
+            margin: 5px;
+        }
+        .btn:hover {
+            background: #2980b9;
+        }
+        .btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+        }
+        .btn-secondary {
+            background: #2ecc71;
+        }
+        .btn-secondary:hover {
+            background: #27ae60;
+        }
+        .btn-danger {
+            background: #e74c3c;
+        }
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+        .file-input {
+            margin: 15px 0;
+            padding: 10px;
+            border: 2px dashed #bdc3c7;
+            border-radius: 6px;
+            text-align: center;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+            background: #ecf0f1;
+            border-left: 4px solid #3498db;
+        }
+        .status.success {
+            border-left-color: #2ecc71;
+            background: #d5f4e6;
+        }
+        .status.error {
+            border-left-color: #e74c3c;
+            background: #fadbd8;
+        }
+        .data-preview {
+            overflow-x: auto;
+            max-height: 300px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+        }
+        tr:hover {
+            background: #f5f7fa;
+        }
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .metric-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #e1e8ed;
+        }
+        .metric-value {
+            font-size: 2em;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+        .metric-label {
+            color: #7f8c8d;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+        .slider-container {
+            margin: 20px 0;
+        }
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: #ddd;
+            outline: none;
+        }
+        .vis-container {
+            width: 100%;
+            height: 300px;
+            margin: 20px 0;
+            border: 1px solid #e1e8ed;
+            border-radius: 6px;
+        }
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e1e8ed;
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+            section {
+                padding: 15px;
+            }
+            .btn {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚢 Titanic Survival Classifier</h1>
+            <p class="subtitle">Train a shallow neural network directly in your browser using TensorFlow.js</p>
+            <p>No server required • Everything runs client-side • Deployable to GitHub Pages</p>
+        </header>
+
+        <section id="data-load">
+            <h2>1. Data Load</h2>
+            <p>Upload Titanic dataset CSV files. You can get them from <a href="https://www.kaggle.com/c/titanic/data" target="_blank">Kaggle</a>.</p>
+            <div class="grid">
+                <div class="file-input">
+                    <label for="train-file"><strong>Training Data</strong> (train.csv)</label><br>
+                    <input type="file" id="train-file" accept=".csv">
+                </div>
+                <div class="file-input">
+                    <label for="test-file"><strong>Test Data</strong> (test.csv)</label><br>
+                    <input type="file" id="test-file" accept=".csv">
+                </div>
+            </div>
+            <button id="load-btn" class="btn">Load CSV Files</button>
+            <div id="load-status" class="status">Ready to load data.</div>
+        </section>
+
+        <section id="data-inspection">
+            <h2>2. Data Inspection</h2>
+            <div id="inspection-status" class="status">Load data to inspect.</div>
+            <div class="grid">
+                <div>
+                    <h3>Dataset Shape</h3>
+                    <div id="shape-info"></div>
+                </div>
+                <div>
+                    <h3>Missing Values</h3>
+                    <div id="missing-info"></div>
+                </div>
+            </div>
+            <h3>Data Preview</h3>
+            <div id="data-preview" class="data-preview"></div>
+        </section>
+
+        <section id="preprocessing">
+            <h2>3. Preprocessing & Feature Engineering</h2>
+            <div id="preprocess-status" class="status">Preprocessing will run automatically after data load.</div>
+            <div class="grid">
+                <div>
+                    <h4>Derived Features</h4>
+                    <label><input type="checkbox" id="feat-family" checked> FamilySize = SibSp + Parch + 1</label><br>
+                    <label><input type="checkbox" id="feat-alone" checked> IsAlone (FamilySize == 1)</label>
+                </div>
+                <div>
+                    <h4>Preprocessing Steps</h4>
+                    <ul>
+                        <li>Age: Median imputation</li>
+                        <li>Embarked: Mode imputation</li>
+                        <li>Age & Fare: Standardization</li>
+                        <li>Categorical: One-hot encoding</li>
+                    </ul>
+                </div>
+            </div>
+            <button id="preprocess-btn" class="btn btn-secondary" disabled>Run Preprocessing</button>
+            <div id="feature-info"></div>
+        </section>
+
+        <section id="model">
+            <h2>4. Model Architecture</h2>
+            <div class="grid">
+                <div>
+                    <h4>Shallow Neural Network</h4>
+                    <ul>
+                        <li>Input: <span id="input-dim">?</span> features</li>
+                        <li>Sigmoid Feature Gate (trainable importance weights)</li>
+                        <li>Hidden: Dense(16, ReLU)</li>
+                        <li>Output: Dense(1, Sigmoid)</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>Training Configuration</h4>
+                    <ul>
+                        <li>Optimizer: Adam</li>
+                        <li>Loss: Binary Crossentropy</li>
+                        <li>Metrics: Accuracy</li>
+                        <li>Validation Split: 20%</li>
+                        <li>Early Stopping: Patience 5</li>
+                    </ul>
+                </div>
+            </div>
+            <div id="model-summary"></div>
+        </section>
+
+        <section id="training">
+            <h2>5. Training</h2>
+            <div id="train-status" class="status">Ready to train.</div>
+            <button id="train-btn" class="btn btn-secondary" disabled>Start Training (50 epochs)</button>
+            <div id="training-progress"></div>
+        </section>
+
+        <section id="metrics">
+            <h2>6. Metrics & Evaluation</h2>
+            <div id="eval-status" class="status">Train model to evaluate.</div>
+            <div class="slider-container">
+                <div class="slider-label">
+                    <span>Classification Threshold</span>
+                    <span id="threshold-value">0.5</span>
+                </div>
+                <input type="range" id="threshold-slider" min="0" max="1" step="0.01" value="0.5" disabled>
+            </div>
+            <div class="metrics-grid" id="metrics-display"></div>
+            <div id="charts" class="vis-container"></div>
+            <h3>Feature Importance (Sigmoid Gate)</h3>
+            <div id="importance-table"></div>
+            <div id="importance-vis" class="vis-container"></div>
+        </section>
+
+        <section id="prediction">
+            <h2>7. Prediction on Test Set</h2>
+            <div id="predict-status" class="status">Load test data and train model to predict.</div>
+            <button id="predict-btn" class="btn" disabled>Generate Predictions</button>
+            <div id="prediction-preview" class="data-preview"></div>
+        </section>
+
+        <section id="export">
+            <h2>8. Export Results</h2>
+            <div class="grid">
+                <button id="export-submission" class="btn" disabled>Download submission.csv</button>
+                <button id="export-probabilities" class="btn" disabled>Download probabilities.csv</button>
+                <button id="export-model" class="btn btn-secondary" disabled>Download Trained Model</button>
+            </div>
+            <div id="export-status" class="status">Export ready after prediction.</div>
+        </section>
+
+        <footer>
+            <p><strong>Deployment Instructions:</strong> Create a public GitHub repository, commit index.html and app.js, enable GitHub Pages (main/root), then open the provided URL.</p>
+            <p>Built with TensorFlow.js • No backend required • All processing in browser</p>
+        </footer>
+    </div>
+
+    <!-- Application JavaScript -->
+    <script src="app.js"></script>
+</body>
+</html>
