@@ -1,7 +1,7 @@
 // app.js - Titanic Binary Classifier with TensorFlow.js
 // ======================================================
 
-// ============================================================================
+// ===========================================================================
 // GLOBAL STATE
 // ============================================================================
 let state = {
@@ -1132,4 +1132,5 @@ DEPLOYMENT:
 - Works on GitHub Pages (static hosting)
 - All dependencies loaded from CDN
 - No build step required
+
 */
